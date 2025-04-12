@@ -1,103 +1,193 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
+interface IVideo {
+  _id?: string;
+  title: string;
+  description: string;
+  videoUrl: string;
+  thumbnailURL: string;
+  controls?: boolean;
+  transformation?: {
+    height: number;
+    width: number;
+    quality: number;
+  };
+}
+
+export default function HomePage() {
+  const { data: session, status } = useSession();
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [videos, setVideos] = useState<IVideo[]>([]);
+  const router = useRouter();
+
+  const isAuthenticated = status === "authenticated";
+
+  const fetchVideos = async () => {
+    try {
+      const res = await fetch("/api/videos");
+      const data = await res.json();
+      setVideos(data);
+    } catch (err) {
+      console.error("Error fetching videos", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchVideos();
+    }
+  }, [isAuthenticated]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    const endpoint =
+      authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+
+    const payload =
+      authMode === "register"
+        ? { email, password, name }
+        : { email, password };
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+        return;
+      }
+
+      router.refresh(); // Refresh session
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred");
+    }
+  };
+
+  if (status === "loading") return <div className="p-10 text-center">Loading...</div>;
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="min-h-screen bg-base-200 py-12 px-4">
+      <div className="max-w-3xl mx-auto">
+        {!isAuthenticated ? (
+          <div className="card shadow-xl bg-base-100 p-8">
+            <h1 className="text-4xl font-bold mb-6 text-center capitalize">
+              {authMode}
+            </h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            {error && <div className="alert alert-error mb-4">{error}</div>}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {authMode === "register" && (
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  className="input input-bordered w-full"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              )}
+
+              <input
+                type="email"
+                placeholder="Email"
+                className="input input-bordered w-full"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+
+              <input
+                type="password"
+                placeholder="Password"
+                className="input input-bordered w-full"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+
+              <button type="submit" className="btn btn-primary w-full">
+                {authMode === "register" ? "Create Account" : "Login"}
+              </button>
+            </form>
+
+            <div className="text-center mt-6">
+              {authMode === "login" ? (
+                <p>
+                  Don&apos;t have an account?{" "}
+                  <button
+                    className="link link-primary"
+                    onClick={() => setAuthMode("register")}
+                  >
+                    Register
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  Already have an account?{" "}
+                  <button
+                    className="link link-primary"
+                    onClick={() => setAuthMode("login")}
+                  >
+                    Login
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="mb-10 text-center">
+              <h1 className="text-4xl font-bold mb-2">
+                Welcome, {session.user?.name || session.user?.email}
+              </h1>
+              <p className="text-lg text-gray-500">Enjoy your videos below 👇</p>
+            </div>
+
+            {videos.length === 0 ? (
+              <div className="text-center text-gray-500">No videos found.</div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {videos.map((video) => (
+                  <div key={video._id} className="card bg-base-100 shadow-lg">
+                    <figure>
+                      <img
+                        src={video.thumbnailURL}
+                        alt={video.title}
+                        className="w-full h-48 object-cover"
+                      />
+                    </figure>
+                    <div className="card-body">
+                      <h2 className="card-title">{video.title}</h2>
+                      <p>{video.description}</p>
+                      <video
+                        src={video.videoUrl}
+                        controls
+                        className="w-full mt-4 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </main>
   );
 }
