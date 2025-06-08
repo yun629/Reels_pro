@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface IVideo {
   _id?: string;
@@ -166,9 +167,11 @@ export default function HomePage() {
                 {videos.map((video) => (
                   <div key={video._id} className="card bg-base-100 shadow-lg">
                     <figure>
-                      <img
+                      <Image
                         src={video.thumbnailURL}
                         alt={video.title}
+                        width={400}
+                        height={200}
                         className="w-full h-48 object-cover"
                       />
                     </figure>
