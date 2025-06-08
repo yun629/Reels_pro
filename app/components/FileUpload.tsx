@@ -4,14 +4,11 @@ import {  IKUpload } from "imagekitio-next";
 import { Loader2 } from "lucide-react";
 import { IKUploadResponse } from "imagekitio-next/dist/types/components/IKUpload/props";
 
-
 interface FileUploadProps{
     onSuccess:(res:IKUploadResponse) => void
     onProgress ?: (progress:number) => void
     fileType? : "image" | "video"
 }
-
-
 
 export default function FileUpload({
     onSuccess,
@@ -20,7 +17,7 @@ export default function FileUpload({
 }:FileUploadProps) {
 
     const [uploading,setUploading]=useState(false);
-    const [error,setError]=useState<String | null>(null);
+    const [error,setError]=useState<string | null>(null);
 
   const onError = (err :{message:string}) => {
     console.log("Error", err);
@@ -64,14 +61,13 @@ export default function FileUpload({
             return false;
         }
         if(file.size>5*1024*1024){
-            setError("Video must be less than 5MB");
+            setError("Image must be less than 5MB");
             return false;
         }
     }
 
-    return false;
+    return true;
   }
-
 
   return (
     <div className="space-y-2">
@@ -94,13 +90,13 @@ export default function FileUpload({
                     <span>Uploading....</span>
                 </div>
             )
-        },
+        }
         {
             error && (
                 <div className="text-error text-sm ">{error}
                 </div>
             )
-        },
+        }
     </div>
   );
 }
