@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
 
     const body: IVideo = await request.json();
 
-    const requiredFields = ['title', 'description', 'videoUrl', 'thumbnailURL'];
-    const missing = requiredFields.filter((key) => !(body as Record<string, unknown>)[key]);
+    const requiredFields = ['title', 'description', 'videoUrl', 'thumbnailURL'] as const;
+    const missing = requiredFields.filter((key) => !body[key]);
 
     if (missing.length > 0) {
       return NextResponse.json(
