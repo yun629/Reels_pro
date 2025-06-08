@@ -9,11 +9,10 @@ const Header = () => {
     const {data:session}=useSession();
 
     const handleSignOut=async()=>{
-    
         try{
             await signOut();
         }catch(err){
-
+            console.error("Sign out error:", err);
         }
     }
   return (
