@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-export default {
+const config: Config = {
     content:[
         "./app/**/*.{js,ts,jsx,tsx}",
         "./pages/**/*.{js,ts,jsx,tsx}",
@@ -17,9 +17,13 @@ export default {
     plugins:[
         require("daisyui")
     ],
-    daisyui: {
-        themes: ["dark"],
-        darkTheme: "dark",
-    },
     darkMode:"class",
-} satisfies Config;
+};
+
+// daisyui 설정을 별도로 추가
+(config as any).daisyui = {
+    themes: ["dark"],
+    darkTheme: "dark",
+};
+
+export default config;
