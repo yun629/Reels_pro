@@ -1,196 +1,193 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
 interface IVideo {
-  _id?: string;
   title: string;
   description: string;
   videoUrl: string;
   thumbnailURL: string;
   controls?: boolean;
   transformation?: {
-    height: number;
-    width: number;
-    quality: number;
+    height?: number;
+    width?: number;
+    quality?: number;
   };
 }
 
-export default function HomePage() {
-  const { data: session, status } = useSession();
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [error, setError] = useState("");
+export default function VideosPage() {
   const [videos, setVideos] = useState<IVideo[]>([]);
-  const router = useRouter();
-
-  const isAuthenticated = status === "authenticated";
-
-  const fetchVideos = async () => {
-    try {
-      const res = await fetch("/api/videos");
-      const data = await res.json();
-      setVideos(data);
-    } catch (err) {
-      console.error("Error fetching videos", err);
-    }
-  };
+  const [form, setForm] = useState<IVideo>({
+    title: "",
+    description: "",
+    videoUrl: "",
+    thumbnailURL: "",
+    controls: true,
+    transformation: { quality: 100 },
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchVideos();
+    // Fetch videos on load
+    const fetchVideos = async () => {
+      try {
+        const res = await fetch("/api/videos");
+        const data = await res.json();
+        setVideos(data);
+      } catch (err) {
+        console.error("Failed to fetch videos", err);
+      }
+    };
+
+    fetchVideos();
+  }, []);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+
+    if (name.startsWith("transformation.")) {
+      const key = name.split(".")[1] as keyof IVideo["transformation"];
+      setForm((prev) => ({
+        ...prev,
+        transformation: {
+          ...prev.transformation,
+          [key]: Number(value),
+        },
+      }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
     }
-  }, [isAuthenticated]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     setError("");
 
-    const endpoint =
-      authMode === "register" ? "/api/auth/register" : "/api/auth/login";
-
-    const payload =
-      authMode === "register"
-        ? { email, password, name }
-        : { email, password };
-
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/videos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(form),
       });
 
       const data = await res.json();
+
       if (!res.ok) {
-        setError(data.error || "Something went wrong");
+        setError(data.error || "Failed to upload video");
         return;
       }
 
-      router.refresh(); // Refresh session
+      setVideos((prev) => [data, ...prev]);
+      setForm({
+        title: "",
+        description: "",
+        videoUrl: "",
+        thumbnailURL: "",
+        controls: true,
+        transformation: { quality: 100 },
+      });
     } catch (err) {
+      setError("Something went wrong");
       console.error(err);
-      setError("An error occurred");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (status === "loading") return <div className="p-10 text-center">Loading...</div>;
-
   return (
-    <main className="min-h-screen bg-base-200 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        {!isAuthenticated ? (
-          <div className="card shadow-xl bg-base-100 p-8">
-            <h1 className="text-4xl font-bold mb-6 text-center capitalize">
-              {authMode}
-            </h1>
+    <div className="max-w-3xl mx-auto py-10 px-4">
+      <h1 className="text-3xl font-bold mb-6">Upload a Video</h1>
 
-            {error && <div className="alert alert-error mb-4">{error}</div>}
+      {error && (
+        <div className="alert alert-error mb-4">
+          <span>{error}</span>
+        </div>
+      )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {authMode === "register" && (
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  className="input input-bordered w-full"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              )}
+      <form onSubmit={handleSubmit} className="space-y-4 mb-10">
+        <input
+          type="text"
+          name="title"
+          placeholder="Title"
+          className="input input-bordered w-full"
+          value={form.title}
+          onChange={handleChange}
+          required
+        />
 
-              <input
-                type="email"
-                placeholder="Email"
-                className="input input-bordered w-full"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+        <textarea
+          name="description"
+          placeholder="Description"
+          className="textarea textarea-bordered w-full"
+          value={form.description}
+          onChange={handleChange}
+          required
+        />
 
-              <input
-                type="password"
-                placeholder="Password"
-                className="input input-bordered w-full"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+        <input
+          type="url"
+          name="videoUrl"
+          placeholder="Video URL"
+          className="input input-bordered w-full"
+          value={form.videoUrl}
+          onChange={handleChange}
+          required
+        />
 
-              <button type="submit" className="btn btn-primary w-full">
-                {authMode === "register" ? "Create Account" : "Login"}
-              </button>
-            </form>
+        <input
+          type="url"
+          name="thumbnailURL"
+          placeholder="Thumbnail URL"
+          className="input input-bordered w-full"
+          value={form.thumbnailURL}
+          onChange={handleChange}
+          required
+        />
 
-            <div className="text-center mt-6">
-              {authMode === "login" ? (
-                <p>
-                  Don&apos;t have an account?{" "}
-                  <button
-                    className="link link-primary"
-                    onClick={() => setAuthMode("register")}
-                  >
-                    Register
-                  </button>
-                </p>
-              ) : (
-                <p>
-                  Already have an account?{" "}
-                  <button
-                    className="link link-primary"
-                    onClick={() => setAuthMode("login")}
-                  >
-                    Login
-                  </button>
-                </p>
-              )}
-            </div>
+        <input
+          type="number"
+          name="transformation.quality"
+          placeholder="Quality (default: 100)"
+          className="input input-bordered w-full"
+          value={form.transformation?.quality ?? ""}
+          onChange={handleChange}
+        />
+
+        <button
+          type="submit"
+          className="btn btn-primary w-full"
+          disabled={loading}
+        >
+          {loading ? "Uploading..." : "Submit"}
+        </button>
+      </form>
+
+      <h2 className="text-2xl font-semibold mb-4">All Videos</h2>
+      <div className="space-y-4">
+        {videos.map((video, index) => (
+          <div key={index} className="card card-bordered p-4">
+            <h3 className="text-lg font-bold">{video.title}</h3>
+            <p>{video.description}</p>
+            <Image
+              src={video.thumbnailURL}
+              alt={video.title}
+              width={400}
+              height={200}
+              className="w-full h-auto mt-2 rounded-md"
+            />
+            <video
+              src={video.videoUrl}
+              controls
+              className="mt-4 w-full rounded-md"
+            />
           </div>
-        ) : (
-          <>
-            <div className="mb-10 text-center">
-              <h1 className="text-4xl font-bold mb-2">
-                Welcome, {session.user?.name || session.user?.email}
-              </h1>
-              <p className="text-lg text-gray-500">Enjoy your videos below 👇</p>
-            </div>
-
-            {videos.length === 0 ? (
-              <div className="text-center text-gray-500">No videos found.</div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {videos.map((video) => (
-                  <div key={video._id} className="card bg-base-100 shadow-lg">
-                    <figure>
-                      <Image
-                        src={video.thumbnailURL}
-                        alt={video.title}
-                        width={400}
-                        height={200}
-                        className="w-full h-48 object-cover"
-                      />
-                    </figure>
-                    <div className="card-body">
-                      <h2 className="card-title">{video.title}</h2>
-                      <p>{video.description}</p>
-                      <video
-                        src={video.videoUrl}
-                        controls
-                        className="w-full mt-4 rounded-lg"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+        ))}
       </div>
-    </main>
+    </div>
   );
 }
