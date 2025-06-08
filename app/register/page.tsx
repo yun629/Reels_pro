@@ -32,6 +32,7 @@ const Register = () => {
 
             })
             const data=await res.json();
+            console.log('Registration response:', data);
             if(!res.ok){
                 setError("Registration failed");
                 return;
