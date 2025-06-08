@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface IVideo {
   title: string;
@@ -28,8 +28,6 @@ export default function VideosPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const router = useRouter();
 
   useEffect(() => {
     // Fetch videos on load
@@ -175,9 +173,11 @@ export default function VideosPage() {
           <div key={index} className="card card-bordered p-4">
             <h3 className="text-lg font-bold">{video.title}</h3>
             <p>{video.description}</p>
-            <img
+            <Image
               src={video.thumbnailURL}
               alt={video.title}
+              width={400}
+              height={200}
               className="w-full h-auto mt-2 rounded-md"
             />
             <video
