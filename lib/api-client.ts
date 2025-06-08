@@ -1,20 +1,19 @@
 import { IVideo } from "@/models/Video";
 
-
 export type videoFormData=Omit<IVideo,"_id">
 
 type FetchOptions={
     method? :"GET"|"POST"|"PUT"|"DELETE",
-    body?:any,
+    body?:unknown,
     headers? :Record<string,string>,
 }
 
 class ApiClient{
     private async fetch<T>(
         endpoint:string,
-        options:{}
+        options:FetchOptions
     ):Promise<T>{
-        const {method="GET",body,headers={}}:FetchOptions=options;
+        const {method="GET",body,headers={}}=options;
 
         const defaultHeaders={
             "Content-Type":"application/json",
