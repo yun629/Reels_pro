@@ -3,9 +3,24 @@ import  CredentialsProvider  from "next-auth/providers/credentials";
 import { connectToDatabase } from "./db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
-import { signIn } from "next-auth/react";
-import { error } from "console";
 
+interface AuthToken {
+    id?: string;
+    email?: string;
+    name?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+interface AuthSession {
+    user?: {
+        id: string;
+        email: string;
+        name: string;
+        createdAt: string;
+        updatedAt: string;
+    };
+}
 
 export const authOptions: NextAuthOptions = {
     providers:[
@@ -16,7 +31,7 @@ export const authOptions: NextAuthOptions = {
                 password:{label:"Password",type:"password"},
                 name:{label:"Name",type:"text"},
             },
-            async authorize(credentials, req) {
+            async authorize(credentials) {
 
                 if(!credentials?.email || !credentials?.password || !credentials?.name){
                     throw new Error("Please provide email and password and name");
@@ -48,7 +63,7 @@ export const authOptions: NextAuthOptions = {
         })
     ],
     callbacks:{
-        async jwt({token,user}: { token?: any; user?: any }){
+        async jwt({token,user}: { token: AuthToken; user?: AuthToken }){
             if(user){
                 token.id=user.id;
                 token.email=user.email;
@@ -59,7 +74,7 @@ export const authOptions: NextAuthOptions = {
 
             return token; 
         },
-        async session({session,token}: { session: any; token: any }){
+        async session({session,token}: { session: AuthSession; token: AuthToken }){
 
             if(session.user){
                 session.user.id=token.id as string;
@@ -80,8 +95,5 @@ export const authOptions: NextAuthOptions = {
         strategy:"jwt",
         maxAge: 30 * 24 * 60 * 60, 
     },
-    secret:{
-        secret: process.env.NEXT_AUTH_SECRET,
-    }
-
+    secret: process.env.NEXT_AUTH_SECRET,
 }
